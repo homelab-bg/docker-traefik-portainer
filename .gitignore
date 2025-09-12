@@ -1,0 +1,41 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Traefik data
+letsencrypt/
+traefik.yml
+
+# Portainer data
+portainer_data/
+
+# Logs
+*.log
+logs/
+
+# Data directories
+data/
+volumes/
+
+# Secrets and certificates
+secrets/
+certs/
+acme.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.temp
