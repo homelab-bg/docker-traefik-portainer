@@ -70,6 +70,12 @@ services:
       traefik.http.routers.traefik.tls: "true"
       traefik.http.routers.traefik.tls.certresolver: letsencrypt
       traefik.http.routers.traefik.service: api@internal
+      # The router above points at the special api@internal service, so this
+      # port is never actually used for routing - but Traefik still tries to
+      # build a default load-balancer service for any traefik.enable=true
+      # container and errors ("port is missing") without one. 8080 is
+      # Traefik's own internal API/dashboard port.
+      traefik.http.services.traefik.loadbalancer.server.port: "8080"
     logging: *default-logging
 
   portainer:
