@@ -4,7 +4,7 @@ A complete infrastructure foundation providing Traefik reverse proxy with Let's 
 
 ## Services Included
 
-- **Traefik v3.5.1**: Reverse proxy and load balancer with automatic SSL certificates
+- **Traefik v3.7.10+**: Reverse proxy and load balancer with automatic SSL certificates (v3.6.0+ required on Docker 29+ hosts - see `.env.example`)
 - **Portainer CE/EE**: Web-based container management interface
 - **Let's Encrypt**: Automatic SSL certificate provisioning via Route53 DNS challenge
 
