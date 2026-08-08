@@ -65,9 +65,9 @@ services:
       - traefik
     labels:
       <<: *default-labels
-      traefik.enable: true
+      traefik.enable: "true"
       traefik.http.routers.traefik.rule: Host(`${TRAEFIK_HOST}`)
-      traefik.http.routers.traefik.tls: true
+      traefik.http.routers.traefik.tls: "true"
       traefik.http.routers.traefik.tls.certresolver: letsencrypt
       traefik.http.routers.traefik.service: api@internal
     logging: *default-logging
@@ -83,9 +83,9 @@ services:
       - traefik
     labels:
       <<: *default-labels
-      traefik.enable: true
+      traefik.enable: "true"
       traefik.http.routers.portainer.rule: Host(`${PORTAINER_HOST}`)
-      traefik.http.routers.portainer.tls: true
+      traefik.http.routers.portainer.tls: "true"
       traefik.http.routers.portainer.tls.certresolver: letsencrypt
       traefik.http.services.portainer.loadbalancer.server.port: ${PORTAINER_PORT}
     logging: *default-logging
