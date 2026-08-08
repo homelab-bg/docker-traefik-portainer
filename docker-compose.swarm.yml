@@ -1,0 +1,20 @@
+---
+# Swarm-mode overlay - layer on top of docker-compose.yml when deploying to a
+# Docker Swarm cluster instead of a single host:
+#
+#   docker stack deploy -c docker-compose.yml -c docker-compose.swarm.yml <stack>
+#
+# No placement constraints needed: traefik_letsencrypt/portainer_data bind to a
+# CephFS mount shared identically across every node in the cluster, instead of
+# Docker's node-local `local` volume driver, so either service can run on (or
+# be rescheduled to) any node without losing certs/data.
+services:
+  traefik:
+    environment:
+      - TRAEFIK_PROVIDERS_DOCKER_SWARMMODE=true
+    volumes:
+      - /mnt/cephfs/traefik-portainer/letsencrypt:/letsencrypt
+
+  portainer:
+    volumes:
+      - /mnt/cephfs/traefik-portainer/portainer-data:/data

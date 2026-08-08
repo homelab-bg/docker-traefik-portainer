@@ -39,6 +39,16 @@ PORTAINER_EDITION=ce
 docker compose up -d
 ```
 
+## Swarm Deployment
+
+For a Docker Swarm cluster instead of a single host, layer `docker-compose.swarm.yml` on top:
+
+```bash
+docker stack deploy -c docker-compose.yml -c docker-compose.swarm.yml traefik-portainer
+```
+
+This swaps the `traefik_letsencrypt`/`portainer_data` named volumes for bind mounts under `/mnt/cephfs/traefik-portainer/` - a shared filesystem mounted identically on every node - and turns on Traefik's `--providers.docker.swarmmode` flag so it discovers Swarm services instead of plain containers. No node placement constraints are needed: since the CephFS mount is the same on every node, either service can run on (or be rescheduled to) any node without losing certs/data. Same `.env`/environment variables as the standalone deployment above.
+
 ## Prerequisites
 
 ### Required
