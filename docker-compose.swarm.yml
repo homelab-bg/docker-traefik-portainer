@@ -17,6 +17,7 @@ services:
     # rather than just adding a flag to it (a v2 assumption that doesn't apply
     # here - see https://doc.traefik.io/traefik/v3.5/providers/swarm/).
     command:
+      - --log.level=INFO
       - --providers.swarm=true
       - --providers.swarm.exposedbydefault=false
       - --entrypoints.web.address=:80
