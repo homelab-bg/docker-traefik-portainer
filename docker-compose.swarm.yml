@@ -14,7 +14,17 @@ services:
       - TRAEFIK_PROVIDERS_DOCKER_SWARMMODE=true
     volumes:
       - /mnt/cephfs/traefik-portainer/letsencrypt:/letsencrypt
+    labels:
+      # docker stack deploy's compose parser is stricter than `docker compose`'s -
+      # it rejects bare YAML booleans in labels ("must be a string, number or
+      # null"), unlike docker-compose.yml's unquoted `true` values. Overriding
+      # here (labels merge by key) rather than touching the base file.
+      traefik.enable: "true"
+      traefik.http.routers.traefik.tls: "true"
 
   portainer:
     volumes:
       - /mnt/cephfs/traefik-portainer/portainer-data:/data
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.portainer.tls: "true"
