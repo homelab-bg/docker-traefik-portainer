@@ -1,5 +1,9 @@
 ---
-# portainer and traefik deployment
+# portainer, traefik, and dnsweaver deployment - standalone (docker compose
+# up -d), single host only. AWS and Technitium credentials are delivered via
+# mounted secrets files (secrets/aws_credentials, secrets/technitium_token -
+# both gitignored), not plain environment variables - plain env vars are
+# visible via `docker inspect`, this isn't.
 x-logging:
   &default-logging
   driver: "json-file"
@@ -47,20 +51,19 @@ services:
       - --entrypoints.web.http.redirections.entrypoint.to=websecure
       - --entrypoints.web.http.redirections.entrypoint.scheme=https
     environment:
-      # Host/Port details for Traefik & Portainer
       - TRAEFIK_HOST=${TRAEFIK_HOST}
-      # AWS credentials for Route53 DNS challenge
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SHARED_CREDENTIALS_FILE=/run/secrets/aws_credentials
       - AWS_REGION=${AWS_REGION:-us-east-1}
       # Optional: Specify hosted zone ID for better performance
       - AWS_HOSTED_ZONE_ID=${AWS_HOSTED_ZONE_ID}
+    secrets:
+      - aws_credentials
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - traefik_letsencrypt:/letsencrypt
+      - ${DATA_DIR:-./data}/letsencrypt:/letsencrypt
     networks:
       - traefik
     labels:
@@ -84,7 +87,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - portainer_data:/data
+      - ${DATA_DIR:-./data}/portainer-data:/data
     networks:
       - traefik
     labels:
@@ -93,12 +96,48 @@ services:
       traefik.http.routers.portainer.rule: Host(`${PORTAINER_HOST}`)
       traefik.http.routers.portainer.tls: "true"
       traefik.http.routers.portainer.tls.certresolver: letsencrypt
-      traefik.http.services.portainer.loadbalancer.server.port: ${PORTAINER_PORT}
+      traefik.http.services.portainer.loadbalancer.server.port: "${PORTAINER_PORT:-9000}"
     logging: *default-logging
 
-volumes:
-  portainer_data:
-  traefik_letsencrypt:
+  # Watches Traefik's labels and auto-creates/removes a DNS record for any
+  # Host() rule matching DNSWEAVER_INTERNAL_DOMAINS - so an app deployed via
+  # Portainer's GitOps feature gets working DNS without a manual step.
+  # Tracks ownership of the records it creates via a TXT marker, so it won't
+  # touch a record it didn't create itself (e.g. this stack's own Terraform-
+  # managed DNS) even if the label also matches the domain glob - verified
+  # live: it correctly skips both Portainer's own record and a
+  # self-referential CNAME onto DNSWEAVER_INTERNAL_TARGET.
+  #
+  # On by default via COMPOSE_PROFILES=dnsweaver in .env.example - profile-
+  # gated rather than unconditional so a fresh bootstrap without
+  # secrets/technitium_token provisioned yet doesn't fail to start, but on
+  # by default so a rebuild doesn't silently lose DNS automation with no
+  # obvious signal anything's missing.
+  dnsweaver:
+    image: maxamill/dnsweaver:${DNSWEAVER_VER:-latest}
+    restart: unless-stopped
+    profiles: ["dnsweaver"]
+    environment:
+      - DNSWEAVER_DOCKER_MODE=standalone
+      - DNSWEAVER_INSTANCES=internal
+      - DNSWEAVER_INTERNAL_TYPE=technitium
+      - DNSWEAVER_INTERNAL_URL=${TECHNITIUM_URL}
+      - DNSWEAVER_INTERNAL_TOKEN_FILE=/run/secrets/technitium_token
+      - DNSWEAVER_INTERNAL_ZONE=${DNSWEAVER_ZONE}
+      - DNSWEAVER_INTERNAL_RECORD_TYPE=CNAME
+      - DNSWEAVER_INTERNAL_TARGET=${TRAEFIK_HOST}
+      - DNSWEAVER_INTERNAL_DOMAINS=${DNSWEAVER_DOMAINS}
+      - DNSWEAVER_SOURCES=traefik
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    secrets:
+      - technitium_token
+
+secrets:
+  aws_credentials:
+    file: ./secrets/aws_credentials
+  technitium_token:
+    file: ./secrets/technitium_token
 
 networks:
   traefik:
