@@ -141,5 +141,5 @@ secrets:
 
 networks:
   traefik:
-    name: ${NETWORK}
+    name: ${NETWORK:-traefik}
     external: false

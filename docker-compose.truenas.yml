@@ -1,0 +1,35 @@
+---
+# TrueNAS overlay - layer on top of docker-compose.yml. Deploy as a TrueNAS
+# Custom App (Apps > Discover Apps > Install via YAML) with this dataset as
+# the project directory, so ./secrets, ./data and .env resolve inside it:
+#
+#   include:
+#     - path:
+#         - /mnt/<pool>/Apps/traefik-portainer/docker-compose.yml
+#         - /mnt/<pool>/Apps/traefik-portainer/docker-compose.truenas.yml
+#
+# TrueNAS's own web UI listens on 80/443 on every interface, so Traefik binds
+# to a dedicated alias IP (BOUND_IP) instead of 0.0.0.0. `!override` replaces
+# the base file's ports outright - without it compose merges both lists and
+# Traefik still tries to bind 0.0.0.0:80/443.
+services:
+  traefik:
+    ports: !override
+      - host_ip: ${BOUND_IP:?set BOUND_IP to a TrueNAS alias IP}
+        published: 80
+        target: 80
+        protocol: tcp
+      - host_ip: ${BOUND_IP:?set BOUND_IP to a TrueNAS alias IP}
+        published: 443
+        target: 443
+        protocol: tcp
+
+  # COMPOSE_PROFILES in an included project's .env only feeds variable
+  # interpolation - it doesn't activate profiles for the TrueNAS app - so
+  # dnsweaver is un-gated here to make sure it always runs.
+  dnsweaver:
+    profiles: !reset []
+
+# x-portals (TrueNAS Apps UI Web Portal buttons) can't live here - `include:`
+# drops top-level x- extensions from included files. Put them in the Custom
+# App YAML alongside the include block instead - see README.

@@ -44,6 +44,30 @@ PORTAINER_EDITION=ce
 docker compose up -d
 ```
 
+## TrueNAS Deployment
+
+`docker-compose.truenas.yml` is an overlay for running this stack as a TrueNAS Custom App. It:
+
+- binds Traefik's 80/443 to `BOUND_IP` (a TrueNAS alias IP), because the TrueNAS web UI already uses 80/443 on every interface
+- always runs dnsweaver, because `COMPOSE_PROFILES` from an included project's `.env` doesn't enable profiles in a TrueNAS app
+1. Put this repo in a dataset, e.g. `/mnt/<pool>/Apps/traefik-portainer`, then create `.env` (with `BOUND_IP` set) and `secrets/` there as described in Quick Start. `secrets/technitium_token` is required, because dnsweaver always runs on TrueNAS.
+2. **Apps → Discover Apps → Install via YAML**, with:
+```yaml
+include:
+  - path:
+      - /mnt/<pool>/Apps/traefik-portainer/docker-compose.yml
+      - /mnt/<pool>/Apps/traefik-portainer/docker-compose.truenas.yml
+
+# Web Portal buttons in the TrueNAS Apps UI. These go here, not in the overlay,
+# because `include:` drops top-level x- extensions from included files. Use
+# literal hostnames: .env isn't applied to this file.
+x-portals:
+  - {name: Traefik Web UI, scheme: https, host: traefik.yourdomain.com, port: 443, path: /}
+  - {name: Portainer Web UI, scheme: https, host: portainer.yourdomain.com, port: 443, path: /}
+```
+
+The dataset is the project directory, so `.env`, `./secrets` and the default `DATA_DIR=./data` all resolve inside it.
+
 ## Prerequisites
 
 ### Required
