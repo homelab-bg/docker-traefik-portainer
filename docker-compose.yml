@@ -115,6 +115,7 @@ services:
   # obvious signal anything's missing.
   dnsweaver:
     image: maxamill/dnsweaver:${DNSWEAVER_VER:-latest}
+    container_name: dnsweaver
     restart: unless-stopped
     profiles: ["dnsweaver"]
     environment:
