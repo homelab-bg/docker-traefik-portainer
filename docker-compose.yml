@@ -61,6 +61,11 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    # For network_mode: host containers (e.g. Home Assistant), Traefik's Docker
+    # provider forwards to host.docker.internal, falling back to 127.0.0.1 -
+    # Traefik's own container. On Linux that name only resolves with this.
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${DATA_DIR:-./data}/letsencrypt:/letsencrypt
