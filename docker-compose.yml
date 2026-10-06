@@ -14,7 +14,7 @@ x-logging:
 
 x-common-labels: &default-labels
   logging_jobname: "containerlogs"
-  stackname: "${MONITORING_STACK}"
+  stackname: "${STACK_NAME:-traefik-portainer}"
 
 services:
   traefik:
@@ -137,6 +137,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     secrets:
       - technitium_token
+    labels:
+      <<: *default-labels
+    logging: *default-logging
 
 secrets:
   aws_credentials:
