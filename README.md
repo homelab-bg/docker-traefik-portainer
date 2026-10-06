@@ -51,6 +51,27 @@ docker compose up -d
 - binds Traefik's 80/443 to `BOUND_IP` (a TrueNAS alias IP), because the TrueNAS web UI already uses 80/443 on every interface
 - always runs dnsweaver, because `COMPOSE_PROFILES` from an included project's `.env` doesn't enable profiles in a TrueNAS app
 1. Put this repo in a dataset, e.g. `/mnt/<pool>/Apps/traefik-portainer`, then create `.env` (with `BOUND_IP` set) and `secrets/` there as described in Quick Start. `secrets/technitium_token` is required, because dnsweaver always runs on TrueNAS.
+
+   **Permissions matter here, confirmed live** - `dnsweaver`'s container drops privileges to
+   UID/GID `1000`, and Docker's file-based `secrets:` (under plain `docker compose`, not Swarm)
+   preserves the *host* file's actual ownership/permissions when mounting it into the container,
+   rather than re-owning it. A `root:root 0600` (or any owner/mode UID `1000` can't read) file
+   fails silently from dnsweaver's own perspective - it logs a warning
+   (`secret file specified but unreadable, ignoring direct env var ... permission denied`) and
+   carries on without the token, not a hard failure. This is why it works unmodified via the
+   Ansible-driven deploy (`ansible-pve-docker-green`'s `copy` task writes it `mode: '0600'`
+   owned by `ansible_user` - Ubuntu cloud-init conventionally assigns that user UID `1000`,
+   so it happens to line up) but not on TrueNAS, where whatever user creates the file manually
+   almost never is UID `1000`. Fix either by matching the UID exactly:
+   ```sh
+   chown 1000:1000 secrets/technitium_token
+   chmod 0400 secrets/technitium_token
+   ```
+   or more simply, matching dnsweaver's own suggested fallback (fine if `secrets/` itself is
+   already locked down at the directory level):
+   ```sh
+   chmod 0644 secrets/technitium_token
+   ```
 2. **Apps → Discover Apps → Install via YAML**, with:
 ```yaml
 include:
